@@ -1,0 +1,266 @@
+---
+title: "Google Analytics Capstone"
+author: "Justin-Passing"
+date: "1/15/2022"
+output: html_document
+---
+
+## Scenario
+
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+### Step 1: ASK
+
+A clear statement of the business task:
+
+* How do annual members and casual riders use Cyclistic bikes differently?
+Although making up more than half of the ridership members only account for approx 37% usage by time.
+
+* Why would casual riders buy Cyclistic annual memberships?
+Permitting that there is a possibility of a lower cost per use casual riders could be incentivized to become members.
+* How can Cyclistic use digital media to influence casual riders to become members?
+Membership could be presented as  benefit for key times that casual riders use rentals. Mid day and weekend benefits may be attractive to many users.
+* Provide insights to the director of marketing and your manager that can drive successful business decisions. 
+Offer a 'rider buddy' program, providing a lower membership during warmer months if multiple users join together.
+Provide off peak packages with lower rates to entice a broader rental scope.
+
+
+### Step 2: Prepare
+
+Cyclistic’s historical trip data will be used to analyze and identify trends in the previous 12 monthly csv files, Jan-Dec 2021.
+
+The data is open sourced online and provided by the company itself so one assumes the data is original and reliable. The data could be more comprehensive, since pricing is not included it is difficult to make an accurate profit proposal although trends are provided. Cyclistic offers vehicles suited for less abled riders as well so the data is not biased in that regard. Age and sex are not reported. Use of the data is protected by licensing but Motivate grants a non-exclusive, royalty-free, limited, perpetual license to access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose.
+
+Files downloaded from https://divvy-tripdata.s3.amazonaws.com/index.html
+
+### Setting the RStudio environment
+
+Installed packages ggplot2, lubridate, janitor and tidyverse with install.packages("")
+
+```{r setup, include=FALSE}
+
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("dplyr")
+library(dplyr)
+install.packages("lubridate")
+library(lubridate)
+install.packages("janitor")
+library(janitor)
+install.packages("tidyverse")
+library(tidyverse)
+
+bikers1<- read_csv("c:/users/justin/desktop/unzipped/bikers1.csv")
+
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+### Process
+
+Guiding questions
+● What tools are you choosing and why?
+
+● Have you ensured your data’s integrity?
+● What steps have you taken to ensure that your data is clean?
+● How can you verify that your data is clean and ready to analyze?
+● Have you documented your cleaning process so you can review and share those results?
+Key tasks
+1. Check the data for errors.
+2. Choose your tools.
+3. Transform the data so you can work with it effectively.
+4. Document the cleaning process.
+Deliverable
+Documentation of any cleaning or manipulation of data
+
+
+### Combining data frames & Cleaning the data
+
+I individually verified column uniformity and joined the 12 data files into one to promote ease of use for cleaning and manipulation.
+
+##### bikers<- rbind(jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec)
+
+created copy bikers1 for analysis
+
+File containing 5595063 rows of 13 variables
+
+Removing duplicates
+
+##### bikers1<- bikers1[!duplicated(bikers1), ]
+
+remove blank and na values
+
+##### bikers1<- drop_na(bikers)
+
+##### bikers1 <- bikers1[!(bikers1$start_station_name == ""), ]
+
+##### bikers1 <- bikers1[!(bikers1$end_station_name == ""), ]
+
+
+Formatted start_at and ended_at to date time for calculations
+
+##### bikers1$started_at<- lubridate::ymd_hms(bikers1$started_at)
+
+##### bikers1$ended_at<- lubridate::ymd_hms(bikers1$ended_at)
+
+Created a start time column
+
+##### bikers1$start_time<- format(bikers1$started_at, "%H:%M:%S")
+
+
+Created 2 new columns of ride_length 1 integer, 1 difftime
+
+##### bikers1$ride_length<- difftime(bikers1$ended_at, bikers1$started_at)
+
+##### bikers1$ride_length<- as.integer(bikers1$ride_length)
+
+and
+
+##### bikers1$ride_length_min<- signif(difftime(bikers1$ended_at, bikers1$started_at, units = "mins"),2)
+
+created a new column of day of the week
+
+##### bikers1$day_of_the_week<- wday(bikers1$started_at, label=TRUE)
+
+4588302 rows 17 variables
+
+removed bike sessions less than 1 minute and more than 24 hours
+
+##### bikers1<- subset(bikers1,bikers1$ride_length >1)
+
+##### bikers1<- subset(bikers1,bikers1$ride_length <1440)
+
+4527006 rows 17 variables
+
+
+```{r}
+
+```
+
+
+```{r }
+summary(bikers1)
+```
+
+### Visuals of frequency according to user status,ride length, day or the week and bike type.
+
+```{r , echo=FALSE}
+
+ggplot(bikers1)+geom_bar(mapping=aes(x=day_of_the_week, fill=rideable_type))+facet_wrap(~member_casual)+theme(axis.text.x=element_text(angle=45, hjust=1))+ scale_y_continuous(labels = function(x) format(x, scientific = FALSE))+labs(title = "Total Ride Sessions by class, bike type and day of the Week")
+
+barplot(table(bikers1$ride_length_min), main= "Rider Distribution by Ride Length in Minutes", xlab = "Sessions in Minutes", ylab = "Frequency in Sessions")
+
+
+bikers1 %>% 
+    group_by(member_casual, day_of_the_week) %>% 
+    summarize(average_duration = mean(ride_length_min)) %>% 
+    arrange(member_casual, day_of_the_week) %>% 
+    ggplot(aes(x = day_of_the_week, y = average_duration, color = member_casual, fill = member_casual)) +
+    geom_col(position = "dodge2") +
+    labs(title = "Average Session Length by Class") +
+    ylab("Average Session in Minutes") +
+    xlab("Day of Week (alphabetical)")
+
+
+```
+
+### Analyze
+
+
+Guiding questions
+
+● How should you organize your data to perform analysis on it?
+Data is clean, verified and uniform for analysis
+
+● Has your data been properly formatted?
+Data is formatted in correct format for multiple valued analysis
+
+● What surprises did you discover in the data?
+The biggest surprise to me was the average session time, much lower than I imagined.
+
+● What trends or relationships did you find in the data?
+As expected members use the service more often but for shorter periods, where as casual riders use the service less frequently but for longer sessions.
+
+● How will these insights help answer your business questions?
+The trends established during analysis are subtle to create informed business decisions
+
+Calculations isolating some values for evaluation
+
+total sessions
+
+##### sessions<- sum(bikers1$member_casual) = 4,527,006
+
+member sessions
+
+##### member_sessions<- sum(bikers1$member_casual == "member") = 2,500,587
+
+casual sessions
+
+##### casual_sessions<- sum(bikers1$member_casual == "casual") = 2,026,419
+
+member 55%, casual 45% of all sessions
+
+total ride length
+
+##### total_rides_min<- sum(bikers1$ride_length_min) = 91,169,941
+
+member ride length
+
+##### member_rides_min<- sum(bikers1$ride_length_min[bikers1$member_casual == "member"]) = 33,445,406
+
+casual ride length
+
+#####  casual_ride<- sum(bikers1$ride_length[bikers1$member_casual == "casual"]) = 57,724,535
+
+casual 63%, member 37% of total ride length
+
+Average Ride time
+
+##### mean_ride<- mean(bikers1$ride_length_min) = 20.14 minute
+
+Average member time
+
+##### member_mean_ride<- (member_rides_min / member_sessions) = 33,445,406 / 2,500,587 = 13.37 min
+
+Average casual time
+
+##### casual_mean_ride<- (casual_rides_min / casual_sessions) = 57,724,535 / 2,026,419 = 28.48 min
+
+mean all riders
+
+##### mean(as.difftime(bikers1$start_time, format="%H:%M:%S", units="hours"))
+
+Time difference of 14.74755 hours = average pick up all uses approx 2:45 pm session
+median all riders
+
+##### median(as.difftime(bikers1$start_time, format="%H:%M:%S", units="hours"))
+
+Time difference of 15.57083 hours = most frequent pick up all users approx 3:30 pm session
+
+##### mean(as.difftime(bikers1$start_time[bikers1$member_casual == "member"], format="%H:%M:%S", units="hours"))
+
+##### mean member session - Time difference of 14.48089 hour = approx 2:30 pm
+
+##### mean(as.difftime(bikers1$start_time[bikers1$member_casual == "casual"], format="%H:%M:%S", units="hours"))
+
+##### mean casual session - Time difference of 15.07661 hours =approx 3
+
+
+Deliverable Analysis
+
+* Why would casual riders buy Cyclistic annual memberships?
+
+Permitting that there is a possibility of a lower cost per use casual riders could be incentivized to become members.
+* How can Cyclistic use digital media to influence casual riders to become members?
+
+Twitter, Facebook, Instagram, fitness magazines are all good locations for targeting health and outdoor admirers. Membership could be presented as benefit for key times that casual riders use rentals. Mid day and weekend benefits may be attractive to many users. Discounts for bike type and start time may prove beneficial.
+
+* Provide insights to the director of marketing and your manager that can drive successful business decisions.
+
+Offer a 'rider buddy' program if multiple users join together or providing a lower membership during warmer months.
+Provide off peak packages with lower rates to entice a broader rental scope.
+
+#file of dataset for analysis
+
+write_csv(bikers1,file="bikers1, row.names=FALSE)
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
